@@ -27,5 +27,6 @@ require (
 	github.com/ugorji/go v0.0.0-20151028022000-f1f1a805ed36 // indirect
 	gopkg.in/inf.v0 v0.9.0 // indirect
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v2.0.0+incompatible
 )

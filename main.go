@@ -40,6 +40,8 @@ var (
 	cleanInterval        = flag.Duration("clean-interval", 1800*time.Second, "time in seconds, what period of time will be done cleaning of inactive services")
 	metricsListenAddress = flag.String("metrics-listen-address", ":8080", "the address to listen on for HTTP requests.")
 	versionFlag          = flag.Bool("version", false, "print version end exit")
+	useConfigFile        = flag.Bool("useConfigFile",false, "Use config file rather than a config map")
+	configFilePath       = flag.String("configFilePath","/config/config.yaml","If useConfigFile is true, use this file as config instead of a configmap")
 )
 
 func init() {
@@ -86,7 +88,11 @@ func main() {
 		}
 
 	load_config:
-		cfg, err = config.Load(clientset, namespace, name)
+		if *useConfigFile{
+			cfg, err = config.LoadFile(*configFilePath)
+		}else {
+			cfg, err = config.Load(clientset, namespace, name)
+		}
 		if err != nil {
 			glog.Errorf("Unable to load configuration: %v", err)
 			time.Sleep(10 * time.Second)

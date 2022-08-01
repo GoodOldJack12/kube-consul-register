@@ -9,6 +9,8 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 
 	"k8s.io/client-go/kubernetes"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
 )
 
 // RegisterMode is a name of register mode
@@ -65,6 +67,25 @@ func Load(clientset *kubernetes.Clientset, namespace string, name string) (*Conf
 	filledConfig, err = config.fillConfig(cfg.Data)
 	if err != nil {
 		return config, fmt.Errorf("Can't fill configuration: %s", err)
+	}
+	return filledConfig, nil
+}
+func LoadFile(filePath string) (*Config, error) {
+	var filledConfig *Config
+
+	yfile, err := ioutil.ReadFile(filePath)
+
+	if err != nil {
+		 return config, fmt.Errorf(err.Error())
+	}
+	data := make(map[string]string)
+	err2 := yaml.Unmarshal(yfile, &data)
+	if err2 != nil {
+		return config, fmt.Errorf("Can't deserialize: %s", err2)
+    }
+	filledConfig, err3 := config.fillConfig(data)
+	if err3 != nil {
+		return config, fmt.Errorf("Can't fill configuration: %s", err3)
 	}
 	return filledConfig, nil
 }
