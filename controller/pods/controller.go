@@ -16,7 +16,7 @@ import (
 	"github.com/tczekajlo/kube-consul-register/utils"
 
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/types"
 	"k8s.io/client-go/tools/cache"
