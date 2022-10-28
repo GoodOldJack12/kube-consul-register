@@ -408,91 +408,50 @@ func (c *Controller) eventAddFunc(obj interface{}) error {
 	var ports []int32
 	var err error
 
-	switch serviceType := obj.(*v1.Service).Spec.Type; serviceType {
-	case v1.ServiceTypeNodePort:
-		// Check if ExternalIPs is empty
-		if len(obj.(*v1.Service).Spec.ExternalIPs) > 0 {
-			nodesIPs = obj.(*v1.Service).Spec.ExternalIPs
-		} else {
-			nodesIPs, err = c.getNodesIPs()
-			if err != nil {
-				return err
-			}
-		}
-		for _, port := range obj.(*v1.Service).Spec.Ports {
-			if port.Protocol == v1.ProtocolTCP {
-				ports = append(ports, port.NodePort)
-			}
-		}
-
-		// Now is time to add service to Consul
-		for _, nodeAddress := range nodesIPs {
-			for _, port := range ports {
-				// Add to Consul
-				service, err := c.createConsulService(obj.(*v1.Service), nodeAddress, port)
-				if err != nil {
-					glog.Errorf("Cannot create Consul service: %s", err)
-					continue
-				}
-				// Check if service's already added
-				if _, ok := allAddedServices[service.ID]; ok {
-					glog.V(3).Infof("Service %s has already registered in Consul", service.ID)
-					continue
-				}
-
-				consulAgent := c.consulInstance.New(c.cfg, nodeAddress, "")
-				err = consulAgent.Register(service)
-				if err != nil {
-					glog.Errorf("Cannot register service in Consul: %s", err)
-					metrics.ConsulFailure.WithLabelValues("register", consulAgent.Config.Address).Inc()
-				} else {
-					allAddedServices[service.ID] = true
-					glog.Infof("Service %s has been registered in Consul with ID: %s", obj.(*v1.Service).ObjectMeta.Name, service.ID)
-					metrics.ConsulSuccess.WithLabelValues("register", consulAgent.Config.Address).Inc()
-				}
-			}
-		}
-	case v1.ServiceTypeClusterIP:
-		// Check if ExternalIPs is empty
-		if len(obj.(*v1.Service).Spec.ExternalIPs) > 0 {
-			nodesIPs = obj.(*v1.Service).Spec.ExternalIPs
-		} else {
-			return nil
-		}
-		for _, port := range obj.(*v1.Service).Spec.Ports {
-			if port.Protocol == v1.ProtocolTCP {
-				ports = append(ports, port.NodePort)
-			}
-		}
-
-		// Now is time to add service to Consul
-		for _, nodeAddress := range nodesIPs {
-			for _, port := range ports {
-				// Add to Consul
-				service, err := c.createConsulService(obj.(*v1.Service), nodeAddress, port)
-				if err != nil {
-					glog.Errorf("Cannot create Consul service: %s", err)
-					continue
-				}
-				// Check if service's already added
-				if _, ok := allAddedServices[service.ID]; ok {
-					glog.V(3).Infof("Service %s has already registered in Consul", service.ID)
-					continue
-				}
-
-				consulAgent := c.consulInstance.New(c.cfg, nodeAddress, "")
-				err = consulAgent.Register(service)
-				if err != nil {
-					glog.Errorf("Cannot register service in Consul: %s", err)
-					metrics.ConsulFailure.WithLabelValues("register", consulAgent.Config.Address).Inc()
-				} else {
-					allAddedServices[service.ID] = true
-					glog.Infof("Service %s has been registered in Consul with ID: %s", obj.(*v1.Service).ObjectMeta.Name, service.ID)
-					metrics.ConsulSuccess.WithLabelValues("register", consulAgent.Config.Address).Inc()
-				}
-			}
+	serviceType := obj.(*v1.Service).Spec.Type; serviceType {
+	// Check if ExternalIPs is empty
+	if len(obj.(*v1.Service).Spec.ExternalIPs) > 0 {
+		nodesIPs = obj.(*v1.Service).Spec.ExternalIPs
+	} else if serviceType == v1.ServiceTypeClusterIP {
+		return nil
+	} else if serviceType == v1.ServiceTypeNodePort
+		nodesIPs, err = c.getNodesIPs()
+		if err != nil {
+			return err
 		}
 	}
+	for _, port := range obj.(*v1.Service).Spec.Ports {
+		if port.Protocol == v1.ProtocolTCP {
+			ports = append(ports, port.NodePort)
+		}
+	}
+
+	// Now is time to add service to Consul
+	for _, nodeAddress := range nodesIPs {
+		for _, port := range ports {
+			// Add to Consul
+			service, err := c.createConsulService(obj.(*v1.Service), nodeAddress, port)
+			if err != nil {
+				glog.Errorf("Cannot create Consul service: %s", err)
+				continue
+			}
+			// Check if service's already added
+			if _, ok := allAddedServices[service.ID]; ok {
+				glog.V(3).Infof("Service %s has already registered in Consul", service.ID)
+				continue
+			}
+
+			consulAgent := c.consulInstance.New(c.cfg, nodeAddress, "")
+			err = consulAgent.Register(service)
+			if err != nil {
+				glog.Errorf("Cannot register service in Consul: %s", err)
+				metrics.ConsulFailure.WithLabelValues("register", consulAgent.Config.Address).Inc()
+			} else {
+				allAddedServices[service.ID] = true
+				glog.Infof("Service %s has been registered in Consul with ID: %s", obj.(*v1.Service).ObjectMeta.Name, service.ID)
+				metrics.ConsulSuccess.WithLabelValues("register", consulAgent.Config.Address).Inc()
+			}
+		}
 	return nil
 }
 
