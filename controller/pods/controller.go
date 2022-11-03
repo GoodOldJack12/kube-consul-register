@@ -27,6 +27,8 @@ import (
 // These are valid annotations names which are take into account.
 // "ConsulRegisterEnabledAnnotation" is a name of annotation key for `enabled` option.
 // "ConsulRegisterServiceNameAnnotation" is a name of annotation key for `service.name` option.
+// "ConsulRegisterServiceAddressAnnotation" overrides the service address reported to consul
+// "ConsulRegisterServiceIDAnnotation" overrides the services the service instance id
 // "ConsulRegisterServiceMetaPrefixAnnotation" is a prefix name of annotation key for `service.meta` option.
 // "CreatedByAnnotation" represents the key used to store the spec(json)
 // used to create the resource
@@ -37,6 +39,7 @@ const (
 	ConsulRegisterServiceNameAnnotation       string = "consul.register/service.name"
 	ConsulRegisterServiceMetaPrefixAnnotation string = "consul.register/service.meta."
 	ConsulRegisterServiceAddressAnnotation    string = "consul.register/service.address"
+	ConsulRegisterServiceIDAnnotation		  string = "consul.register/service.id"
 	CreatedByAnnotation                       string = "kubernetes.io/created-by"
 	ExpectedContainerNamesAnnotation          string = "consul.register/pod.container.name"
 	ContainerProbeLivenessAnnotation          string = "consul.register/pod.container.probe.liveness"
@@ -436,8 +439,11 @@ func (p *PodInfo) PodToConsulService(containerStatus v1.ContainerStatus, cfg *co
 			service.Name = p.Name
 		}
 	}
-
-	service.ID = fmt.Sprintf("%s-%s", p.Name, containerStatus.Name)
+	if value, ok := p.Annotations[ConsulRegisterServiceIDAnnotation]; ok {
+		service.ID = value
+	}else {
+		service.ID = fmt.Sprintf("%s-%s", p.Name, containerStatus.Name)
+	}
 	service.Tags = p.labelsToTags(containerStatus.Name)
 	service.Meta = p.annotationsToMeta()
 
