@@ -36,6 +36,7 @@ const (
 	ConsulRegisterEnabledAnnotation           string = "consul.register/enabled"
 	ConsulRegisterServiceNameAnnotation       string = "consul.register/service.name"
 	ConsulRegisterServiceMetaPrefixAnnotation string = "consul.register/service.meta."
+	ConsulRegisterServiceAddressAnnotation    string = "consul.register/service.address"
 	CreatedByAnnotation                       string = "kubernetes.io/created-by"
 	ExpectedContainerNamesAnnotation          string = "consul.register/pod.container.name"
 	ContainerProbeLivenessAnnotation          string = "consul.register/pod.container.probe.liveness"
@@ -448,7 +449,11 @@ func (p *PodInfo) PodToConsulService(containerStatus v1.ContainerStatus, cfg *co
 		return service, fmt.Errorf("Port's equal to 0")
 	}
 	service.Port = port
-	service.Address = p.IP
+	if value, ok := p.Annotations[ConsulRegisterServiceAddressAnnotation]; ok {
+		service.Address = value
+	} else {
+		service.Address = p.IP
+	}
 
 	if p.isProbeLivenessEnabled() {
 		check := p.probeToConsulCheck(p.getContainerLivenessProbe(containerStatus.Name), "Liveness Probe")
