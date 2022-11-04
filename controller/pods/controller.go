@@ -156,6 +156,9 @@ func (c *Controller) Clean() error {
 
 		for _, container := range podInfo.ContainerStatuses {
 			serviceID := fmt.Sprintf("%s-%s", podInfo.Name, container.Name)
+			if value, ok := podInfo.Annotations[ConsulRegisterServiceIDAnnotation]; ok {
+				serviceID = value
+			}
 			addedServices[serviceID] = true
 		}
 
@@ -223,6 +226,10 @@ func (c *Controller) Sync() error {
 
 		for _, container := range podInfo.ContainerStatuses {
 			serviceID := fmt.Sprintf("%s-%s", podInfo.Name, container.Name)
+
+			if value, ok := podInfo.Annotations[ConsulRegisterServiceIDAnnotation]; ok {
+				serviceID = value
+			}
 			// If service does not appears in Consul's services then remove
 			// container from addedContainers map and call update.
 			if _, ok := addedConsulServices[serviceID]; !ok {
@@ -333,6 +340,9 @@ func eventDeleteFunc(obj interface{}, consulInstance consul.Adapter, cfg *config
 		// Consul Agent
 		consulAgent := consulInstance.New(cfg, podInfo.NodeName, podInfo.IP)
 		serviceID := fmt.Sprintf("%s-%s", podInfo.Name, container.Name)
+		if value, ok := podInfo.Annotations[ConsulRegisterServiceIDAnnotation]; ok {
+			serviceID = value
+		}
 		service := &consulapi.AgentServiceRegistration{ID: serviceID}
 		err := consulAgent.Deregister(service)
 		if err != nil {
